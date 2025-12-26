@@ -14,4 +14,9 @@
     <Folder Include="Controllers\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Enterprise.Security.Application\Enterprise.Security.Application.csproj" />
+    <ProjectReference Include="..\Enterprise.Security.Infrastructure\Enterprise.Security.Infrastructure.csproj" />
+  </ItemGroup>
+
 </Project>

@@ -17,4 +17,9 @@
     <Folder Include="Repositories\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Enterprise.Security.Application\Enterprise.Security.Application.csproj" />
+    <ProjectReference Include="..\Enterprise.Security.Domain\Enterprise.Security.Domain.csproj" />
+  </ItemGroup>
+
 </Project>

@@ -13,9 +13,13 @@
     <Folder Include="Interfaces\" />
     <Folder Include="Common\" />
     <Folder Include="Mappings\" />
-    <Folder Include="Polices\" />
+    <Folder Include="Policies\" />
     <Folder Include="Validators\" />
     <Folder Include="Services\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Enterprise.Security.Domain\Enterprise.Security.Domain.csproj" />
   </ItemGroup>
 
 </Project>
