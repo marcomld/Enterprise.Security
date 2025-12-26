@@ -1,1 +1,6 @@
-<Solution />
+<Solution>
+  <Project Path="Enterprise.Security.Api/Enterprise.Security.Api.csproj" />
+  <Project Path="Enterprise.Security.Application/Enterprise.Security.Application.csproj" />
+  <Project Path="Enterprise.Security.Domain/Enterprise.Security.Domain.csproj" />
+  <Project Path="Enterprise.Security.Infrastructure/Enterprise.Security.Infrastructure.csproj" />
+</Solution>
