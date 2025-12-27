@@ -10,8 +10,7 @@
     <Folder Include="Audit\" />
     <Folder Include="Persistence\Migrations\" />
     <Folder Include="Security\" />
-    <Folder Include="Services\" />
-    <Folder Include="Repositories\" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
   <ItemGroup>

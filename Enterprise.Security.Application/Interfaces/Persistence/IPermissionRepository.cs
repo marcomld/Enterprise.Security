@@ -8,6 +8,6 @@ namespace Enterprise.Security.Application.Interfaces.Persistence
 {
     public interface IPermissionRepository
     {
-      Task<IEnumerable<string>> GetPermissionsByRoleIdAsync(Guid roleId);
+        Task<IEnumerable<string>> GetPermissionsByUserIdAsync(Guid userId);
     }
 }

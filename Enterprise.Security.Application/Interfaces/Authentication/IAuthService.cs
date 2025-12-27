@@ -10,9 +10,15 @@ namespace Enterprise.Security.Application.Interfaces.Authentication
 {
     public interface IAuthService
     {
+        // Login recibe LoginRequestDto
         Task<Result<LoginResponseDto>> LoginAsync(LoginRequestDto request);
-        Task<Result<LoginResponseDto>> LoginAsync(RegisterRequestDto request);
+
+        // Register recibe RegisterRequestDto
+        Task<Result<LoginResponseDto>> RegisterAsync(RegisterRequestDto request);
+
+        // Refresh recibe RefreshTokenRequestDto
         Task<Result<LoginResponseDto>> RefreshTokenAsync(RefreshTokenRequestDto request);
+
         Task<Result> LogoutAsync(Guid userId, string refreshToken);
     }
 }

@@ -6,5 +6,6 @@ using System.Threading.Tasks;
 
 namespace Enterprise.Security.Application.DTOs.Auth
 {
-    public record RefreshTokenRequestDto(string RefreshToken);
+    // Agregamos AccessToken. El cliente debe enviar ambos.
+    public record RefreshTokenRequestDto(string AccessToken, string RefreshToken);
 }
