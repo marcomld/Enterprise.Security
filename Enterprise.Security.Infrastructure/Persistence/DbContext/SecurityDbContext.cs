@@ -20,7 +20,8 @@ namespace Enterprise.Security.Infrastructure.Persistence.DbContext
 
         // Tablas del Dominio Puro
         public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
-        public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+        // Eliminamos RefreshTokens porque ya son columnas dentro de Users
+        //public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
         public DbSet<UserSession> UserSessions => Set<UserSession>();
         // Agregamos Permissions si los usaas en el dominio
         public DbSet<Permission> Permissions => Set<Permission>();
