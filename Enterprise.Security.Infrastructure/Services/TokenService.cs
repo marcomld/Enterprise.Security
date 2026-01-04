@@ -25,14 +25,16 @@ namespace Enterprise.Security.Infrastructure.Services
             Guid userId,
             string userName,
             IEnumerable<string> roles,
-            IEnumerable<string> permissions)
+            IEnumerable<string> permissions,
+            string securityStamp)
         {
             var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, userId.ToString()), // Estándar de .NET
             new(JwtRegisteredClaimNames.Sub, userId.ToString()), // Estándar JWT
             new(JwtRegisteredClaimNames.UniqueName, userName),
-            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new("security_stamp", securityStamp) // <--- CRÍTICO: Agregamos el sello
         };
 
             // Agregamos Claims estándar
@@ -47,7 +49,7 @@ namespace Enterprise.Security.Infrastructure.Services
                 issuer: _settings.Issuer,
                 audience: _settings.Audience,
                 claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(_settings.ExpirationMinutes),
+                expires: DateTime.UtcNow.AddMinutes(_settings.AccessTokenMinutes),
                 signingCredentials: creds);
 
             return await Task.FromResult(new JwtSecurityTokenHandler().WriteToken(token));
@@ -103,7 +105,7 @@ namespace Enterprise.Security.Infrastructure.Services
         // NUEVO MÉTODO IMPLEMENTADO
         public DateTime GetAccessTokenExpiration()
         {
-            return DateTime.UtcNow.AddMinutes(_settings.ExpirationMinutes);
+            return DateTime.UtcNow.AddMinutes(_settings.AccessTokenMinutes);
         }
     }
 }

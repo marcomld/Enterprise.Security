@@ -49,6 +49,11 @@ namespace Enterprise.Security.Infrastructure
                 options.Password.RequireDigit = true;
                 options.Password.RequiredLength = 8;
                 options.User.RequireUniqueEmail = true;
+
+                // 🛑 HARDENING 3: Bloqueo por intentos fallidos
+                options.Lockout.AllowedForNewUsers = true;
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15); // Bloqueado 15 min
+                options.Lockout.MaxFailedAccessAttempts = 5; // Al 5to intento incorrecto, chau.
             })
             .AddEntityFrameworkStores<SecurityDbContext>()
             .AddDefaultTokenProviders();

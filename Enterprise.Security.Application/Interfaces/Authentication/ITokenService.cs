@@ -13,7 +13,8 @@ namespace Enterprise.Security.Application.Interfaces.Authentication
             Guid userId,
             string userName,
             IEnumerable<string> roles,
-            IEnumerable<string> permissions);
+            IEnumerable<string> permissions,
+            string securityStamp);
 
         // --- NUEVOS MÉTODOS ---
         string GenerateRefreshToken();
