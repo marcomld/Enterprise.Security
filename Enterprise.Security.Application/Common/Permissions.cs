@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -17,13 +18,48 @@ namespace Enterprise.Security.Application.Common
             public const string Delete = "users.delete";
         }
 
-        // Módulo de Roles (Ejemplo)
+        // Módulo de Roles
         public static class Roles
         {
             public const string View = "roles.view";
-            public const string Manage = "roles.manage";
+            public const string Manage = "roles.manage"; // Crear, Asignar, Borrar roles
+            public const string Assign = "roles.assign";
         }
 
-        // Aquí irás agregando todos los módulos de tu sistema
+        // Módulo de Permisos (Para que alguien pueda asignar permisos a roles)
+        public static class SystemPermissions
+        {
+            public const string Manage = "permissions.manage";
+        }
+
+        /// <summary>
+        /// Este método mágico busca todas las constantes dentro de las clases anidadas.
+        /// Sirve para registrar las Policies automáticamente y para el Seed.
+        /// </summary>
+        public static List<string> GetAll()
+        {
+            var permissions = new List<string>();
+
+            // Obtenemos todas las clases anidadas (Users, Roles, etc.)
+            var nestedClasses = typeof(Permissions).GetNestedTypes(BindingFlags.Public);
+
+            foreach (var nestedClass in nestedClasses)
+            {
+                // Obtenemos todos los campos constantes de cada clase
+                var fields = nestedClass.GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy)
+                    .Where(fi => fi.IsLiteral && !fi.IsInitOnly && fi.FieldType == typeof(string));
+
+                foreach (var field in fields)
+                {
+                    var value = field.GetValue(null) as string;
+                    if (!string.IsNullOrEmpty(value))
+                    {
+                        permissions.Add(value);
+                    }
+                }
+            }
+
+            return permissions;
+        }
     }
 }

@@ -5,7 +5,9 @@ using Enterprise.Security.Application.Interfaces.Authentication;
 using Enterprise.Security.Application.Interfaces.Persistence;
 using Enterprise.Security.Domain.Enums;
 using Enterprise.Security.Infrastructure.Identity;
+using Enterprise.Security.Infrastructure.Settings;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,6 +25,7 @@ namespace Enterprise.Security.Infrastructure.Services
         private readonly IRoleRepository _roleRepo;
         private readonly IPermissionRepository _permRepo;
         private readonly IAuditService _audit;
+        private readonly JwtSettings _jwtSettings; // Configuracion inyectada
 
         public AuthService(
             UserManager<ApplicationUser> userManager,
@@ -30,7 +33,8 @@ namespace Enterprise.Security.Infrastructure.Services
             ITokenService tokenService,
             IRoleRepository roleRepo,
             IPermissionRepository permRepo,
-            IAuditService audit)
+            IAuditService audit,
+            IOptions<JwtSettings> jwtOptions)  //Inyeccion de opciones
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -38,8 +42,12 @@ namespace Enterprise.Security.Infrastructure.Services
             _roleRepo = roleRepo;
             _permRepo = permRepo;
             _audit = audit;
+            _jwtSettings = jwtOptions.Value;
         }
 
+        // ---------------------------------------------------------
+        // LOGIN
+        // ---------------------------------------------------------
         public async Task<Result<LoginResponseDto>> LoginAsync(LoginRequestDto request)
         {
             // 1. Buscar usuario por email
@@ -62,10 +70,16 @@ namespace Enterprise.Security.Infrastructure.Services
 
             if (!result.Succeeded)
             {
-                await _audit.LogAsync(AuditAction.FailedLogin, "User", appUser.Id, "N/A", "Intento fallido de inicio de sesión");
+                await _audit.LogAsync(
+                    action: AuditAction.FailedLogin,
+                    entity: "User",
+                    userId: appUser.Id,
+                    ipAddress: "N/A",
+                    userAgent: "API",
+                    additionalData: result.IsLockedOut ? "Account Locked" : "Bad Password");
 
                 if (result.IsLockedOut)
-                    return Result<LoginResponseDto>.Failure("Cuenta bloqueada temporalmente por múltiples intentos fallidos.");
+                    return Result<LoginResponseDto>.Failure("Cuenta bloqueada temporalmente.");
 
                 return Result<LoginResponseDto>.Failure("Credenciales inválidas");
             }
@@ -75,6 +89,10 @@ namespace Enterprise.Security.Infrastructure.Services
             return await GenerateAuthResponseAsync(appUser, AuditAction.Login);
         }
 
+
+        // ---------------------------------------------------------
+        // REGISTRO
+        // ---------------------------------------------------------
         public async Task<Result<LoginResponseDto>> RegisterAsync(RegisterRequestDto request)
         {
             // 1. Validaciones previas
@@ -94,7 +112,8 @@ namespace Enterprise.Security.Infrastructure.Services
                 FirstName = request.FirstName,
                 LastName = request.LastName,
                 IsActive = true,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                SecurityStamp = Guid.NewGuid().ToString() // Inicializamos el sello
             };
 
             // 3. Guardar en BD (Identity hashea el password automáticamente)
@@ -111,12 +130,21 @@ namespace Enterprise.Security.Infrastructure.Services
             await _userManager.AddToRoleAsync(newUser, "User");
 
             // 5. Auditoría
-            await _audit.LogAsync(AuditAction.UserCreated, "User", newUser.Id, "N/A", $"Usuario registrado: {newUser.Email}");
+            await _audit.LogAsync(
+            action: AuditAction.UserCreated,
+            entity: "User",
+            userId: newUser.Id,
+            ipAddress: "N/A",
+            userAgent: "API");
 
             // 6. Auto-Login (Devolver tokens inmediatamente)
             return await GenerateAuthResponseAsync(newUser, AuditAction.UserCreated);
         }
 
+
+        // ---------------------------------------------------------
+        // REFRESH TOKEN
+        // ---------------------------------------------------------
         public async Task<Result<LoginResponseDto>> RefreshTokenAsync(RefreshTokenRequestDto request)
         {
             // 1. Obtener el "Principal" (Usuario) del AccessToken expirado
@@ -149,6 +177,10 @@ namespace Enterprise.Security.Infrastructure.Services
             return await GenerateAuthResponseAsync(appUser, AuditAction.TokenRefreshed);
         }
 
+
+        // ---------------------------------------------------------
+        // LOGOUT
+        // ---------------------------------------------------------
         public async Task<Result> LogoutAsync(Guid userId, string refreshToken)
         {
             // Buscamos al usuario para revocar su Refresh Token
@@ -166,6 +198,10 @@ namespace Enterprise.Security.Infrastructure.Services
             return Result.Success();
         }
 
+
+        // ---------------------------------------------------------
+        // HELPER: GENERACIÓN DE RESPUESTA
+        // ---------------------------------------------------------
         // --- MÉTODO HELPER PRIVADO (DRY) ---
         // Centraliza la lógica de generación de tokens y respuesta
         private async Task<Result<LoginResponseDto>> GenerateAuthResponseAsync(ApplicationUser user, AuditAction auditAction)
@@ -174,12 +210,16 @@ namespace Enterprise.Security.Infrastructure.Services
             var roles = await _roleRepo.GetRolesByUserIdAsync(user.Id);
             var permissions = await _permRepo.GetPermissionsByUserIdAsync(user.Id);
 
+            // HARDENING: Obtenemos el Sello de Seguridad actual
+            var securityStamp = await _userManager.GetSecurityStampAsync(user);
+
             // B. Generar Tokens JWT
             var accessToken = await _tokenService.GenerateAccessTokenAsync(
                 user.Id,
                 user.UserName!,
                 roles,
-                permissions);
+                permissions,
+                securityStamp ?? "default_stamp");
 
             var refreshToken = _tokenService.GenerateRefreshToken();
 

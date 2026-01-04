@@ -3,6 +3,7 @@ using Enterprise.Security.Application.DTOs.Auth;
 using Enterprise.Security.Application.Interfaces.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 
 namespace Enterprise.Security.Api.Controllers
@@ -18,6 +19,8 @@ namespace Enterprise.Security.Api.Controllers
             _authService = authService;
         }
 
+        // APLICAMOS EL LÍMITE AQUÍ
+        [EnableRateLimiting("auth-policy")]
         [HttpPost("login")]
         [AllowAnonymous]
         public async Task<IActionResult> Login(LoginRequestDto request)
