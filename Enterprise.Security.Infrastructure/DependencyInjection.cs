@@ -1,6 +1,7 @@
 ﻿using Enterprise.Security.Application.Interfaces.Auditing;
 using Enterprise.Security.Application.Interfaces.Authentication;
 using Enterprise.Security.Application.Interfaces.Persistence;
+using Enterprise.Security.Application.Interfaces.Services;
 using Enterprise.Security.Infrastructure.Authorization;
 using Enterprise.Security.Infrastructure.Identity;
 using Enterprise.Security.Infrastructure.Persistence.DbContext;
@@ -59,6 +60,10 @@ namespace Enterprise.Security.Infrastructure
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<IAuditService, AuditService>();
+            //
+            services.AddScoped<IUserService, UserService>();
+            services.AddScoped<IRoleService, RoleService>();
+            services.AddScoped<IPermissionService, PermissionService>();
 
             // 5. Inyectar Repositorios
             services.AddScoped<IUserRepository, UserRepository>();
