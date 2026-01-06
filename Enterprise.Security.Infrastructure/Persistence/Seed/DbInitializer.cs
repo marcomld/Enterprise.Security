@@ -1,4 +1,5 @@
-﻿using Enterprise.Security.Domain.Entities;
+﻿using Enterprise.Security.Application.Common; // Asegúrate de tener este using para los Permisos
+using Enterprise.Security.Domain.Entities;
 using Enterprise.Security.Infrastructure.Identity;
 using Enterprise.Security.Infrastructure.Persistence.DbContext;
 using Microsoft.AspNetCore.Identity;
@@ -35,17 +36,17 @@ namespace Enterprise.Security.Infrastructure.Persistence.Seed
         {
             try
             {
-                // 1. Aplicar migraciones pendientes automáticamente (Opcional, pero recomendado en Dev)
+                // 1. Aplicar migraciones
                 if (_context.Database.IsSqlServer())
                 {
                     await _context.Database.MigrateAsync();
                 }
 
-                // 2. Ejecutar Seeders en orden
+                // 2. Ejecutar Seeders
                 await SeedRolesAsync();
-                await SeedPermissionsAsync();       // Ahora usa Reflection inteligente
-                await SeedRolePermissionsAsync();   // Asigna todo al Admin
-                await SeedAdminUserAsync();
+                await SeedPermissionsAsync();
+                await SeedRolePermissionsAsync();
+                await SeedUsersAsync(); // Renombrado para incluir múltiples usuarios
             }
             catch (Exception ex)
             {
@@ -54,11 +55,12 @@ namespace Enterprise.Security.Infrastructure.Persistence.Seed
             }
         }
 
-        // --- SEEDERS INDIVIDUALES ABAJO ---
+        // --- SEEDERS ---
 
         private async Task SeedRolesAsync()
         {
-            var roles = new[] { "Admin", "User" };
+            // Agregamos un rol "Manager" para pruebas intermedias
+            var roles = new[] { "Admin", "Manager", "User" };
 
             foreach (var roleName in roles)
             {
@@ -66,7 +68,8 @@ namespace Enterprise.Security.Infrastructure.Persistence.Seed
                 {
                     await _roleManager.CreateAsync(new ApplicationRole(roleName)
                     {
-                        Description = $"Rol por defecto {roleName}",
+                        Description = roleName == "Admin" ? "Control Total" :
+                                      roleName == "Manager" ? "Gestión de Usuarios" : "Solo Lectura",
                         IsSystemRole = true
                     });
                     _logger.LogInformation($"Rol creado: {roleName}");
@@ -76,31 +79,24 @@ namespace Enterprise.Security.Infrastructure.Persistence.Seed
 
         private async Task SeedPermissionsAsync()
         {
-            // TRUCO ENTERPRISE: Reflection 🧠
-            // Obtenemos todas las constantes de tu clase 'Permissions' en Application
-            var permissionClass = typeof(Application.Common.Permissions);
-
-            // Buscamos las clases anidadas (Users, Roles, etc.)
+            // Reflection para obtener todos los permisos definidos en el código
+            var permissionClass = typeof(Permissions);
             var modules = permissionClass.GetNestedTypes();
 
             foreach (var module in modules)
             {
-                var moduleName = module.Name; // Ej: "Users"
-
-                // Obtenemos los campos constantes (los permisos strings)
+                var moduleName = module.Name;
                 var fields = module.GetFields(System.Reflection.BindingFlags.Public |
                                               System.Reflection.BindingFlags.Static |
                                               System.Reflection.BindingFlags.FlattenHierarchy);
 
                 foreach (var field in fields)
                 {
-                    var permissionCode = (string)field.GetValue(null)!; // Ej: "users.create"
-                    var description = $"Permiso para {permissionCode}"; // Generamos descripción genérica
+                    var permissionCode = (string)field.GetValue(null)!;
+                    var description = $"Permiso para {permissionCode}";
 
-                    // Verificamos si ya existe en BD para no duplicar
                     if (!await _context.Permissions.AnyAsync(p => p.Code == permissionCode))
                     {
-                        // Usamos TU constructor
                         var permission = new Permission(permissionCode, description, moduleName);
                         _context.Permissions.Add(permission);
                     }
@@ -111,62 +107,98 @@ namespace Enterprise.Security.Infrastructure.Persistence.Seed
 
         private async Task SeedRolePermissionsAsync()
         {
-            // Buscamos el rol Admin
-            var adminRole = await _roleManager.FindByNameAsync("Admin");
-            if (adminRole == null) return;
-
-            // Obtenemos todos los permisos guardados en BD
             var allPermissions = await _context.Permissions.ToListAsync();
 
-            // Obtenemos los permisos que el Admin YA tiene asignados
-            var existingRelations = await _context.RolePermissions
-                .Where(rp => rp.RoleId == adminRole.Id)
+            // 1. ADMIN: Tiene TODOS los permisos
+            await AssignPermissionsToRole("Admin", allPermissions.Select(p => p.Code).ToList());
+
+            // 2. MANAGER: Tiene permisos de Usuarios (Menos Borrar) y Solo ver Roles
+            var managerPermissions = new List<string>
+            {
+                Permissions.Users.View,
+                Permissions.Users.Create,
+                Permissions.Users.Edit,
+                // No puede borrar usuarios (Users.Delete)
+                
+                Permissions.Roles.View
+                // No puede gestionar roles (Roles.Manage, Roles.Assign)
+            };
+            await AssignPermissionsToRole("Manager", managerPermissions);
+
+            // 3. USER: Solo puede VER usuarios (Directorio)
+            var userPermissions = new List<string>
+            {
+                Permissions.Users.View
+            };
+            await AssignPermissionsToRole("User", userPermissions);
+        }
+
+        // Helper para asignar lista de permisos a un rol
+        private async Task AssignPermissionsToRole(string roleName, List<string> permissionCodes)
+        {
+            var role = await _roleManager.FindByNameAsync(roleName);
+            if (role == null) return;
+
+            var permissionsEntities = await _context.Permissions
+                .Where(p => permissionCodes.Contains(p.Code))
                 .ToListAsync();
 
-            foreach (var permission in allPermissions)
+            var existingRelations = await _context.RolePermissions
+                .Where(rp => rp.RoleId == role.Id)
+                .ToListAsync();
+
+            foreach (var permission in permissionsEntities)
             {
-                // Si el Admin no tiene este permiso, se lo asignamos
                 if (!existingRelations.Any(rp => rp.PermissionId == permission.Id))
                 {
-                    // Usamos TU constructor de RolePermission
-                    var relation = new RolePermission(adminRole.Id, permission.Id);
-                    _context.RolePermissions.Add(relation);
+                    _context.RolePermissions.Add(new RolePermission(role.Id, permission.Id));
                 }
             }
             await _context.SaveChangesAsync();
         }
 
-        private async Task SeedAdminUserAsync()
+        private async Task SeedUsersAsync()
         {
-            const string adminEmail = "admin@enterprise.com";
-            const string adminPassword = "Password123!"; // ¡Cambiar en prod!
+            // 1. Crear ADMIN
+            await CreateUser("admin@enterprise.com", "System", "Administrator", "Admin");
 
-            var user = await _userManager.FindByEmailAsync(adminEmail);
+            // 2. Crear MANAGER (Prueba de permisos intermedios)
+            await CreateUser("manager@enterprise.com", "Roberto", "Gerente", "Manager");
 
+            // 3. Crear USER (Prueba de solo lectura)
+            await CreateUser("user@enterprise.com", "Laura", "Usuario", "User");
+        }
+
+        private async Task CreateUser(string email, string firstName, string lastName, string role)
+        {
+            const string password = "Password123!";
+
+            var user = await _userManager.FindByEmailAsync(email);
             if (user == null)
             {
                 user = new ApplicationUser
                 {
-                    UserName = "admin", // O el email, según tu config
-                    Email = adminEmail,
-                    FirstName = "System",
-                    LastName = "Administrator",
+                    UserName = role.ToLower(), // ej: 'admin', 'manager' para login fácil
+                    Email = email,
+                    FirstName = firstName,
+                    LastName = lastName,
                     IsActive = true,
                     EmailConfirmed = true,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.UtcNow,
+                    SecurityStamp = Guid.NewGuid().ToString() // Importante para la validación de seguridad
                 };
 
-                var result = await _userManager.CreateAsync(user, adminPassword);
+                var result = await _userManager.CreateAsync(user, password);
 
                 if (result.Succeeded)
                 {
-                    await _userManager.AddToRoleAsync(user, "Admin");
-                    _logger.LogInformation("Usuario Admin creado exitosamente.");
+                    await _userManager.AddToRoleAsync(user, role);
+                    _logger.LogInformation($"Usuario {role} ({email}) creado.");
                 }
                 else
                 {
                     var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                    _logger.LogError($"Error creando Admin: {errors}");
+                    _logger.LogError($"Error creando {role}: {errors}");
                 }
             }
         }

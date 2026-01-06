@@ -70,18 +70,46 @@ namespace Enterprise.Security.Infrastructure.Services
 
             if (!result.Succeeded)
             {
+                string errorMessage = "Credenciales inválidas";
+                string auditData = "Bad Password";
+
+                if (result.IsLockedOut)
+                {
+                    auditData = "Account Locked";
+
+                    // 1. Obtenemos la fecha exacta de fin de bloqueo desde Identity
+                    var lockoutEnd = await _userManager.GetLockoutEndDateAsync(appUser);
+
+                    if (lockoutEnd.HasValue)
+                    {
+                        // 2. Calculamos el tiempo restante
+                        var remaining = lockoutEnd.Value - DateTimeOffset.UtcNow;
+
+                        // 3. Formateamos el mensaje amigable
+                        if (remaining.TotalMinutes >= 1)
+                        {
+                            errorMessage = $"Cuenta bloqueada. Inténtalo de nuevo en {Math.Ceiling(remaining.TotalMinutes)} minutos.";
+                        }
+                        else
+                        {
+                            errorMessage = $"Cuenta bloqueada. Inténtalo de nuevo en {Math.Ceiling(remaining.TotalSeconds)} segundos.";
+                        }
+                    }
+                    else
+                    {
+                        errorMessage = "Cuenta bloqueada temporalmente.";
+                    }
+                }
+
                 await _audit.LogAsync(
                     action: AuditAction.FailedLogin,
                     entity: "User",
                     userId: appUser.Id,
                     ipAddress: "N/A",
                     userAgent: "API",
-                    additionalData: result.IsLockedOut ? "Account Locked" : "Bad Password");
+                    additionalData: auditData);
 
-                if (result.IsLockedOut)
-                    return Result<LoginResponseDto>.Failure("Cuenta bloqueada temporalmente.");
-
-                return Result<LoginResponseDto>.Failure("Credenciales inválidas");
+                return Result<LoginResponseDto>.Failure(errorMessage);
             }
 
             // 4. Éxito: Generar Tokens y Respuesta
@@ -135,7 +163,8 @@ namespace Enterprise.Security.Infrastructure.Services
             entity: "User",
             userId: newUser.Id,
             ipAddress: "N/A",
-            userAgent: "API");
+            userAgent: "API",
+            additionalData: "Nuevo usuario registrado");
 
             // 6. Auto-Login (Devolver tokens inmediatamente)
             return await GenerateAuthResponseAsync(newUser, AuditAction.UserCreated);

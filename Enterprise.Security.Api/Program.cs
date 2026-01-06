@@ -32,13 +32,24 @@ builder.Services.AddRateLimiter(options =>
 });
 
 // HARDENING 5: CORS Restrictivo (Prepara para Blazor/React)
+//builder.Services.AddCors(options =>
+//{
+//    options.AddPolicy("ProductionCors", policy =>
+//    {
+//        policy.WithOrigins("https://misitio.com", "https://localhost:7000") // Pon aquí la URL de tu futuro Blazor
+//              .AllowAnyMethod()
+//              .AllowAnyHeader();
+//    });
+//});
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("ProductionCors", policy =>
+    options.AddPolicy("AllowBlazorClient", policy =>
     {
-        policy.WithOrigins("https://misitio.com", "https://localhost:7000") // Pon aquí la URL de tu futuro Blazor
-              .AllowAnyMethod()
-              .AllowAnyHeader();
+        policy
+            .AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader();
     });
 });
 
@@ -91,7 +102,7 @@ app.UseHttpsRedirection();
 
 
 // Activar Rate Limiter y CORS antes de Auth
-app.UseCors("ProductionCors");
+app.UseCors("AllowBlazorClient");
 app.UseRateLimiter();
 
 app.UseAuthentication();
