@@ -25,17 +25,41 @@ namespace Enterprise.Security.Infrastructure.Services
             _audit = audit;
         }
 
+        //public async Task<List<UserResponseDto>> GetAllAsync()
+        //{
+        //    return await _userManager.Users
+        //        .Select(u => new UserResponseDto(
+        //            u.Id,
+        //            u.UserName!,     // Nuevo
+        //            u.Email!,
+        //            u.FirstName,     // Nuevo
+        //            u.LastName,      // Nuevo
+        //            u.IsActive
+        //        )).ToListAsync();
+        //}
+
         public async Task<List<UserResponseDto>> GetAllAsync()
         {
-            return await _userManager.Users
-                .Select(u => new UserResponseDto(
-                    u.Id,
-                    u.UserName!,     // Nuevo
-                    u.Email!,
-                    u.FirstName,     // Nuevo
-                    u.LastName,      // Nuevo
-                    u.IsActive
-                )).ToListAsync();
+            var users = await _userManager.Users.ToListAsync();
+            var userDtos = new List<UserResponseDto>();
+
+            foreach (var user in users)
+            {
+                // Obtenemos los roles de CADA usuario
+                var roles = await _userManager.GetRolesAsync(user);
+
+                userDtos.Add(new UserResponseDto(
+                    user.Id,
+                    user.UserName!,
+                    user.Email!,
+                    user.FirstName,
+                    user.LastName,
+                    user.IsActive,
+                    roles.ToList() // <--- Pasamos la lista de roles
+                ));
+            }
+
+            return userDtos;
         }
 
         public async Task<UserResponseDto?> GetByIdAsync(Guid id)
@@ -43,13 +67,17 @@ namespace Enterprise.Security.Infrastructure.Services
             var user = await _userManager.FindByIdAsync(id.ToString());
             if (user == null) return null;
 
+            // Obtener roles del usuario (igual que en GetAllAsync)
+            var roles = await _userManager.GetRolesAsync(user);
+
             return new UserResponseDto(
                 user.Id,
                 user.UserName!,     // Nuevo
                 user.Email!,
                 user.FirstName,     // Nuevo
                 user.LastName,      // Nuevo
-                user.IsActive
+                user.IsActive,
+                roles.ToList()      // <-- Incluimos la lista de roles
             );
         }
 

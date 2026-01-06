@@ -26,6 +26,14 @@ namespace Enterprise.Security.Application.Common
             public const string Assign = "roles.assign";
         }
 
+        // Módulo de Auditoría
+        public static class Audits
+        {
+            public const string View = "audits.view";
+            // Generalmente un auditor solo ve, no edita ni borra logs (por seguridad)
+            // public const string Export = "audits.export"; // Podrías agregar este a futuro
+        }
+
         // Módulo de Permisos (Para que alguien pueda asignar permisos a roles)
         public static class SystemPermissions
         {

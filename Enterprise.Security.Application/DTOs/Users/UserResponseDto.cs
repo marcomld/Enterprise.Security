@@ -13,5 +13,6 @@ namespace Enterprise.Security.Application.DTOs.Users
         string Email,
         string FirstName,
         string LastName,
-        bool IsActive);
+        bool IsActive,
+        List<string> Roles);
 }
