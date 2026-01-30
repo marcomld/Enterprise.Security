@@ -7,13 +7,13 @@ using System.Threading.Tasks;
 namespace Enterprise.Security.Application.DTOs.Audit
 {
     public record AuditLogResponseDto(
-    int Id,
-    string UserId,
-    string Action,      // Ej: "UserCreated"
-    string Entity,      // Ej: "User"
-    string EntityId,
-    string IpAddress,
-    string AdditionalData,
-    DateTime CreatedAt
-    );
+     Guid Id,            //CAMBIO: De int a Guid
+     Guid? UserId,     //CAMBIO: Puede ser nulo (string?)
+     string Action,
+     string Entity,
+     string? EntityId,   // Puede ser nulo
+     string? IpAddress,  // Puede ser nulo
+     string? AdditionalData, // Puede ser nulo
+     DateTime CreatedAt
+ );
 }
