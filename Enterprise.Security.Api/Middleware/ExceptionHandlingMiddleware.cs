@@ -18,7 +18,7 @@ namespace Enterprise.Security.Api.Middleware
             {
                 await _next(context);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
                 context.Response.ContentType = "application/json";

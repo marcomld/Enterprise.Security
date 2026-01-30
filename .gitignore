@@ -361,3 +361,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/Enterprise.Security.Application/DTOs/Roles/RoleResponseDto.cs
+/Enterprise.Security.Application/DTOs/Roles/CreateRoleDto.cs
+/Enterprise.Security.Application/Interfaces/Services/IRoleService.cs

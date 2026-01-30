@@ -10,9 +10,13 @@ namespace Enterprise.Security.Application.Interfaces.Services
 {
     public interface IRoleService
     {
-        Task<Result> AssignRoleAsync(AssignRoleDto dto); // Usando DTO mejor
+        Task<List<RoleResponseDto>> GetAllRolesAsync(); // Cambiamos a DTO complejo para ver descripción
+        Task<Result> CreateRoleAsync(CreateRoleDto dto);
+        Task<Result> DeleteRoleAsync(string roleId);
 
-        // Agregamos Listar Roles para que el Admin sepa qué asignar
-        Task<List<string>> GetAllRolesAsync();
+        Task<Result> AssignRoleAsync(AssignRoleDto dto);
+        Task<Result> UnassignRoleAsync(AssignRoleDto dto); // <--- NUEVO: Para quitar roles
+        Task<Result<List<PermissionDto>>> GetPermissionsByRoleAsync(string roleId); // <-- Firma ajustada
+        Task<Result> UpdatePermissionsAsync(UpdateRolePermissionsDto dto); // <--- NUEVO: Para actualizar permisos de rol
     }
 }

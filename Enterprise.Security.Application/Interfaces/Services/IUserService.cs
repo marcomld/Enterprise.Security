@@ -14,5 +14,7 @@ namespace Enterprise.Security.Application.Interfaces.Services
         Task<UserResponseDto?> GetByIdAsync(Guid id);
         Task<Result> ActivateAsync(Guid id);
         Task<Result> DeactivateAsync(Guid id);
+        // 👇 CORRECCIÓN AQUÍ: Cambiar Task<Result> por Task<Result<string>>
+        Task<Result<string>> CreateAsync(CreateUserDto request);
     }
 }

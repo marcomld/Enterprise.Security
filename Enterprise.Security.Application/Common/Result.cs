@@ -17,7 +17,7 @@ namespace Enterprise.Security.Application.Common
         }
 
         public static Result<T> Success(T value) => new(true, value, null);
-        public static Result<T> Failure(string error) => new(false, default, error);
+        public static new Result<T> Failure(string error) => new(false, default, error);
     }
 
 
