@@ -51,37 +51,37 @@ namespace Enterprise.Security.Infrastructure.Services
 
         public async Task<List<AuditLogResponseDto>> GetAllLogsAsync(string? search = null)
         {
-            var query = _dbContext.AuditLogs.AsQueryable();
+            // Hacemos Join con la tabla de Usuarios para obtener el Email
+            var query = from log in _dbContext.AuditLogs.AsNoTracking()
+                        join user in _dbContext.Users.AsNoTracking()
+                        on log.UserId equals user.Id into userJoin
+                        from u in userJoin.DefaultIfEmpty() // Left Join (por si el usuario se borró)
+                        select new
+                        {
+                            Log = log,
+                            UserEmail = u != null ? u.Email : "Desconocido"
+                        };
 
-            // Si hay texto de búsqueda, filtramos
-            if (!string.IsNullOrWhiteSpace(search))
-            {
-                search = search.ToLower(); // Normalizamos a minúsculas
-                query = query.Where(x =>
-                    x.Action.ToString().ToLower().Contains(search) ||
-                    x.Entity.ToLower().Contains(search) ||
-                    x.AdditionalData.ToLower().Contains(search) ||
-                    x.UserId.ToString().Contains(search) // Búsqueda por ID de usuario
-                                                         // Nota: Si UserId fuera Join con tabla Users, podrías buscar por Email, 
-                                                         // pero por rendimiento ahora buscamos en lo que hay en la tabla Logs.
-                );
-            }
+            // NOTA: Hemos quitado la lógica del "if (!string.IsNullOrWhiteSpace(search))" 
+            // para limpiar el código ya que decidiste no usar la búsqueda por ahora.
 
-            // Traemos los últimos 200 logs ordenados por fecha descendente
-            return await _dbContext.AuditLogs
-                .OrderByDescending(x => x.CreatedAt)
+            var result = await query
+                .OrderByDescending(x => x.Log.CreatedAt)
                 .Take(200)
                 .Select(x => new AuditLogResponseDto(
-                    x.Id,
-                    x.UserId,
-                    x.Action.ToString(),
-                    x.Entity,
-                    x.EntityId,
-                    x.IpAddress,
-                    x.AdditionalData,
-                    x.CreatedAt
+                    x.Log.Id,
+                    x.Log.UserId,
+                    x.UserEmail, // <--- Aquí asignamos el email recuperado
+                    x.Log.Action.ToString(),
+                    x.Log.Entity,
+                    x.Log.EntityId,
+                    x.Log.IpAddress,
+                    x.Log.AdditionalData,
+                    x.Log.CreatedAt
                 ))
                 .ToListAsync();
+
+            return result;
         }
 
         public Task<List<AuditLogResponseDto>> GetMyLogsAsync(string userId)
