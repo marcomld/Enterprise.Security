@@ -34,6 +34,22 @@ namespace Enterprise.Security.Application.Common
             // public const string Export = "audits.export"; // Podrías agregar este a futuro
         }
 
+        public static class Categories
+        {
+            public const string View = "Permissions.Categories.View";
+            public const string Create = "Permissions.Categories.Create";
+            public const string Edit = "Permissions.Categories.Edit";
+            public const string Delete = "Permissions.Categories.Delete";
+        }
+
+        public static class Products
+        {
+            public const string View = "Permissions.Products.View";
+            public const string Create = "Permissions.Products.Create";
+            public const string Edit = "Permissions.Products.Edit";
+            public const string Delete = "Permissions.Products.Delete";
+        }
+
         // Módulo de Permisos (Para que alguien pueda asignar permisos a roles)
         public static class SystemPermissions
         {
