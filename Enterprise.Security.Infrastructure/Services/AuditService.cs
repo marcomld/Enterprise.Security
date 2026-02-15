@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http; // Para IHttpContextAccessor
 
 namespace Enterprise.Security.Infrastructure.Services
 {
@@ -16,40 +17,59 @@ namespace Enterprise.Security.Infrastructure.Services
     {
         // OJO: Aquí inyectamos el DbContext directamente porque Audit es parte de la infraestructura
         private readonly SecurityDbContext _dbContext;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public AuditService(SecurityDbContext dbContext)
+        public AuditService(SecurityDbContext dbContext, IHttpContextAccessor httpContextAccessor)
         {
             _dbContext = dbContext;
-        }
+            _httpContextAccessor = httpContextAccessor;
+    }
 
-        public async Task LogAsync(
-            AuditAction action,
-            string entity,
-            Guid? userId,
-            string ipAddress,
-            string userAgent,
-            string? entityId = null,
-            string? additionalData = null)
+    public async Task LogAsync(
+        AuditAction action,
+        string entity,
+        Guid? userId,
+        string ipAddress = "", // Valor por defecto vacío para que sea opcional
+        string userAgent = "", // Valor por defecto vacío
+        string? entityId = null,
+        string? additionalData = null)
+    {
+        var httpContext = _httpContextAccessor.HttpContext;
+
+            // 1. Detección Automática Robustecida
+            if (string.IsNullOrEmpty(ipAddress) && httpContext != null)
+            {
+                // Intentamos obtener la IP real si hay proxy, sino la remota
+                ipAddress = httpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault()
+                            ?? httpContext.Connection.RemoteIpAddress?.ToString()
+                            ?? "::1";
+            }
+
+            // 2. Detección Automática de UserAgent si no viene informado
+            if (string.IsNullOrEmpty(userAgent) && httpContext != null)
         {
-            // ✅ USANDO ARGUMENTOS CON NOMBRE (Named Arguments)
-            // Esto evita errores si cambias el orden en el futuro.
-            // Sintaxis: parametro_del_constructor: variable_local
-
-            var log = new AuditLog(
-                userId: userId,
-                action: action,
-                entity: entity,
-                entityId: entityId,
-                ipAddress: ipAddress,
-                userAgent: userAgent,
-                additionalData: additionalData
-            );
-
-            _dbContext.AuditLogs.Add(log);
-            await _dbContext.SaveChangesAsync();
+            userAgent = httpContext.Request.Headers["User-Agent"].ToString();
         }
 
-        public async Task<List<AuditLogResponseDto>> GetAllLogsAsync(string? search = null)
+        // 3. Fallback final por si todo falla
+        if (string.IsNullOrEmpty(ipAddress)) ipAddress = "0.0.0.0";
+        if (string.IsNullOrEmpty(userAgent)) userAgent = "Unknown";
+
+        var log = new AuditLog(
+            userId: userId,
+            action: action,
+            entity: entity,
+            entityId: entityId,
+            ipAddress: ipAddress,
+            userAgent: userAgent,
+            additionalData: additionalData
+        );
+
+        _dbContext.AuditLogs.Add(log);
+        await _dbContext.SaveChangesAsync();
+    }
+
+    public async Task<List<AuditLogResponseDto>> GetAllLogsAsync(string? search = null)
         {
             // Hacemos Join con la tabla de Usuarios para obtener el Email
             var query = from log in _dbContext.AuditLogs.AsNoTracking()
@@ -76,7 +96,8 @@ namespace Enterprise.Security.Infrastructure.Services
                     x.Log.Entity,
                     x.Log.EntityId,
                     x.Log.IpAddress,
-                    x.Log.AdditionalData,
+                    x.Log.UserAgent, // <--- Faltaba este parámetro
+                    x.Log.AdditionalData, // <--- Faltaba este parámetro
                     x.Log.CreatedAt
                 ))
                 .ToListAsync();

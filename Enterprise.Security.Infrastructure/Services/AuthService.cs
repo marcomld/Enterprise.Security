@@ -71,11 +71,11 @@ namespace Enterprise.Security.Infrastructure.Services
             if (!result.Succeeded)
             {
                 string errorMessage = "Credenciales inválidas";
-                string auditData = "Bad Password";
+                string auditData = "Contraseña incorrecta";
 
                 if (result.IsLockedOut)
                 {
-                    auditData = "Account Locked";
+                    auditData = "Cuenta bloqueada";
 
                     // 1. Obtenemos la fecha exacta de fin de bloqueo desde Identity
                     var lockoutEnd = await _userManager.GetLockoutEndDateAsync(appUser);
@@ -105,8 +105,8 @@ namespace Enterprise.Security.Infrastructure.Services
                     action: AuditAction.FailedLogin,
                     entity: "User",
                     userId: appUser.Id,
-                    ipAddress: "N/A",
-                    userAgent: "API",
+                    //ipAddress: "N/A",
+                    //userAgent: "API",
                     additionalData: auditData);
 
                 return Result<LoginResponseDto>.Failure(errorMessage);
@@ -162,8 +162,8 @@ namespace Enterprise.Security.Infrastructure.Services
             action: AuditAction.UserCreated,
             entity: "User",
             userId: newUser.Id,
-            ipAddress: "N/A",
-            userAgent: "API",
+            //ipAddress: "N/A",
+            //userAgent: "API",
             additionalData: "Nuevo usuario registrado");
 
             // 6. Auto-Login (Devolver tokens inmediatamente)
@@ -223,7 +223,14 @@ namespace Enterprise.Security.Infrastructure.Services
                 await _userManager.UpdateAsync(user);
             }
 
-            await _audit.LogAsync(AuditAction.Logout, "User", userId, "N/A", "Cierre de sesión");
+            // CORRECCIÓN: Aquí tenías un bug. "Cierre de sesión" se iba al campo userAgent.
+            // Ahora usamos argumentos con nombre para asegurarnos de que va a additionalData.
+            await _audit.LogAsync(
+                action: AuditAction.Logout,
+                entity: "User",
+                userId: userId,
+                additionalData: "Cierre de sesión");
+
             return Result.Success();
         }
 
@@ -264,7 +271,12 @@ namespace Enterprise.Security.Infrastructure.Services
 
             // Auditoría dinámica (AJUSTE 1)
             // Ya no dice siempre "Login", ahora dirá "Create" o "TokenRefreshed" según el caso
-            await _audit.LogAsync(auditAction, "User", user.Id, "N/A", $"Acción exitosa: {auditAction}");
+            // CORRECCIÓN: Quitamos parámetros manuales
+            await _audit.LogAsync(
+                action: auditAction,
+                entity: "User",
+                userId: user.Id,
+                additionalData: $"Acción exitosa: {auditAction}");
 
             return Result<LoginResponseDto>.Success(
                 new LoginResponseDto(
