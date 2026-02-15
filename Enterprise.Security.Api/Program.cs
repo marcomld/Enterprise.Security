@@ -9,6 +9,17 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
+// 1. Necesario para obtener IP y UserAgent en los servicios
+builder.Services.AddHttpContextAccessor();
+
+// 2. Configuración para cuando publiques en Azure (o uses un Proxy/Nginx)
+// Esto permite leer la IP real del usuario a través de los encabezados "X-Forwarded-For"
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor |
+                               Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto;
+});
+
 // 1. Capas Core (Modularidad)
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -88,15 +99,15 @@ app.Use(async (context, next) =>
 });
 
 // 4. Pipeline
+
+app.UseForwardedHeaders(); // Para obtener la IP real del cliente detrás de proxies
+
 app.UseMiddleware<ExceptionHandlingMiddleware>(); // Manejo global de errores
 
 // HARDENING 7: Swagger solo en Dev
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 

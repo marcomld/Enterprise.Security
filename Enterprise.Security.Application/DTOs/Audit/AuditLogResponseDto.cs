@@ -7,13 +7,15 @@ using System.Threading.Tasks;
 namespace Enterprise.Security.Application.DTOs.Audit
 {
     public record AuditLogResponseDto(
-     Guid Id,            //CAMBIO: De int a Guid
-     Guid? UserId,     //CAMBIO: Puede ser nulo (string?)
-     string Action,
-     string Entity,
-     string? EntityId,   // Puede ser nulo
-     string? IpAddress,  // Puede ser nulo
-     string? AdditionalData, // Puede ser nulo
-     DateTime CreatedAt
- );
+        Guid Id,
+        Guid? UserId,
+        string? UserEmail,
+        string Action,
+        string Entity,
+        string? EntityId,
+        string IpAddress,
+        string UserAgent, // <--- NUEVO CAMPO AGREGADO
+        string? AdditionalData,
+        DateTime CreatedAt
+    );
 }
