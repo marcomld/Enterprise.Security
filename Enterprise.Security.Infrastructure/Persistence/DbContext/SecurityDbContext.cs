@@ -18,12 +18,9 @@ namespace Enterprise.Security.Infrastructure.Persistence.DbContext
         {
         }
 
-        // Tablas del Dominio Puro
+        // --- TUS TABLAS (Ahora solo las esenciales) ---
         public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
-        // Eliminamos RefreshTokens porque ya son columnas dentro de Users
-        //public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
-        public DbSet<UserSession> UserSessions => Set<UserSession>();
-        // Agregamos Permissions si los usaas en el dominio
+        // UserSessions eliminada por solicitud
         public DbSet<Permission> Permissions => Set<Permission>();
         public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
 
@@ -31,35 +28,50 @@ namespace Enterprise.Security.Infrastructure.Persistence.DbContext
         {
             base.OnModelCreating(builder);
 
-            // 1. Aplicar configuraciones externas (Busca las clases IEntityTypeConfiguration en este proyecto)
-            // Esto cargará automáticamente AuditLogConfiguration
             builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
 
-            // 2. Renombrar tablas de Identity (Limpieza Enterprise)
-            builder.Entity<ApplicationUser>().ToTable("Users");
-            builder.Entity<ApplicationRole>().ToTable("Roles");
-            builder.Entity<IdentityUserRole<Guid>>().ToTable("UserRoles");
-            builder.Entity<IdentityUserClaim<Guid>>().ToTable("UserClaims");
-            builder.Entity<IdentityUserLogin<Guid>>().ToTable("UserLogins");
-            builder.Entity<IdentityUserToken<Guid>>().ToTable("UserTokens");
-            builder.Entity<IdentityRoleClaim<Guid>>().ToTable("RoleClaims");
+            // =========================================================
+            // 1. ZONA DE LIMPIEZA: Ignorar TODO lo que no es esencial
+            // =========================================================
 
-            // 3. Configuraciones rápidas (si no creaste archivo separado)
-            builder.Entity<RefreshToken>(entity =>
+            builder.Ignore<IdentityUserClaim<Guid>>();
+            builder.Ignore<IdentityRoleClaim<Guid>>();
+            builder.Ignore<IdentityUserLogin<Guid>>();
+            builder.Ignore<IdentityUserToken<Guid>>();
+
+            // Ignoramos UserSessions o RefreshTokens si había configuración previa de Identity
+            // (Al no ponerla en el DbSet, EF Core la ignora por defecto, 
+            //  pero si tienes configuración en un archivo separado, asegúrate de borrar ese archivo también).
+
+            // =========================================================
+            // 2. RENOMBRAMIENTO: Solo las tablas núcleo
+            // =========================================================
+
+            builder.Entity<ApplicationUser>(entity =>
             {
-                entity.ToTable("RefreshTokens");
-                entity.HasKey(x => x.Id);
-                entity.HasIndex(x => x.Token).IsUnique();
+                entity.ToTable("Users");
             });
 
-            builder.Entity<UserSession>(entity =>
+            builder.Entity<ApplicationRole>(entity =>
             {
-                entity.ToTable("UserSessions");
-                entity.HasKey(x => x.Id);
-                entity.HasIndex(x => x.UserId);
+                entity.ToTable("Roles");
             });
 
-            // Configuración para RolePermission (Muchos a Muchos manual)
+            builder.Entity<IdentityUserRole<Guid>>(entity =>
+            {
+                entity.ToTable("UserRoles");
+                entity.HasKey(r => new { r.UserId, r.RoleId });
+            });
+
+            // =========================================================
+            // 3. CONFIGURACIÓN DE TUS TABLAS DE NEGOCIO
+            // =========================================================
+
+            builder.Entity<Permission>(entity =>
+            {
+                entity.ToTable("Permissions");
+            });
+
             builder.Entity<RolePermission>(entity =>
             {
                 entity.ToTable("RolePermissions");
