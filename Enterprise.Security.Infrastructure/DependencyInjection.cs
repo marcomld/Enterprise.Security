@@ -83,6 +83,10 @@ namespace Enterprise.Security.Infrastructure
             services.AddScoped<ICategoryService, CategoryService>();
             services.AddScoped<IProductService, ProductService>();
 
+            // Repositorios y Servicios de Pedidos
+            services.AddScoped<IOrderRepository, OrderRepository>();
+            services.AddScoped<IOrderService, OrderService>();
+
             // ... otros servicios
             services.AddScoped<ICurrentUserService, CurrentUserService>(); // <-- AGREGAR ESTO
 
