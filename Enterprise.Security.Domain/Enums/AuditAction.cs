@@ -45,6 +45,21 @@ namespace Enterprise.Security.Domain.Enums
 
         // --- System Events (90-99) ---
         SystemAccess = 90,
-        SystemError = 91
+        SystemError = 91,
+
+        // Inventory - Categories (100-109)
+        CreateCategory = 100,
+        UpdateCategory = 101,
+        DeleteCategory = 102,
+
+        // Inventory - Products (110-119)
+        CreateProduct = 110,
+        UpdateProduct = 111,
+        DeleteProduct = 112,
+        AdjustStock = 113,
+
+        // Orders (Reserva para futuro)
+        CreateOrder = 120,
+        ApproveOrder = 121
     }
 }
