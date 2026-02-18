@@ -28,8 +28,13 @@ namespace Enterprise.Security.Infrastructure.Persistence.DbContext
         public DbSet<Category> Categories => Set<Category>();
         public DbSet<Product> Products => Set<Product>();
 
+        // Tablas Modulo de Pedidos
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderItem> OrderItems { get; set; }
+
+        // Tablas Modulo de Facturación
+        public DbSet<Invoice> Invoices { get; set; }
+        public DbSet<InvoiceItem> InvoiceItems { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
