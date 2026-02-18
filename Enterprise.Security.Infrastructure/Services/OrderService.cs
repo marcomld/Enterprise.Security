@@ -20,19 +20,22 @@ namespace Enterprise.Security.Infrastructure.Services
         private readonly ICurrentUserService _currentUser;
         private readonly IAuditService _audit;
         private readonly IUserRepository _userRepository; // Descomentar si quieres buscar el nombre del cliente
+        private readonly IInvoiceService _invoiceService;
 
         public OrderService(
             IOrderRepository orderRepository,
             IProductRepository productRepository,
             ICurrentUserService currentUser,
             IAuditService audit,
-            IUserRepository userRepository)
+            IUserRepository userRepository,
+            IInvoiceService invoiceService)
         {
             _orderRepository = orderRepository;
             _productRepository = productRepository;
             _currentUser = currentUser;
             _audit = audit;
             _userRepository = userRepository;
+            _invoiceService = invoiceService;
         }
 
         public async Task<Result<Guid>> CreateOrderAsync(CreateOrderDto dto)
@@ -154,9 +157,51 @@ namespace Enterprise.Security.Infrastructure.Services
 
         public async Task<Result<string>> ApproveOrderAsync(Guid orderId)
         {
-            // ESTE MÉTODO LO IMPLEMENTAREMOS EN LA FASE DE INTEGRACIÓN CON FACTURACIÓN
-            // PORQUE ES EL QUE REQUIERE TRANSACCIÓN MANUAL EXPLÍCITA.
-            return Result<string>.Failure("Funcionalidad pendiente de integración con Facturación.");
+            var order = await _orderRepository.GetByIdAsync(orderId);
+            if (order == null) return Result<string>.Failure("Pedido no encontrado.");
+
+            if (order.Status != OrderStatus.Pending)
+                return Result<string>.Failure($"El pedido no está en estado Pendiente (Estado actual: {order.Status}).");
+
+            // 1. Validar y Reducir Stock
+            foreach (var item in order.Items)
+            {
+                var product = await _productRepository.GetByIdAsync(item.ProductId);
+
+                if (product == null) return Result<string>.Failure($"Producto {item.ProductSku} ya no existe.");
+
+                if (product.StockQuantity < item.Quantity)
+                    return Result<string>.Failure($"Stock insuficiente para {product.Name}. Stock actual: {product.StockQuantity}");
+
+                product.StockQuantity -= item.Quantity;
+                await _productRepository.UpdateAsync(product);
+            }
+
+            // 2. Cambiar Estado
+            order.Status = OrderStatus.Approved;
+            await _orderRepository.UpdateAsync(order);
+
+            // 3. Generar Factura Automática
+            // CAMBIO: Pasamos el ID del usuario actual (Supervisor)
+            var invoiceResult = await _invoiceService.GenerateInvoiceFromOrderAsync(order.Id, _currentUser.UserId);
+
+            if (!invoiceResult.IsSuccess)
+            {
+                return Result<string>.Failure($"Pedido aprobado, pero falló la facturación: {invoiceResult.Error}");
+            }
+
+            // 4. Auditoría CORREGIDA
+            // Usamos argumentos nombrados (nombre: valor) para evitar que los datos se crucen.
+            await _audit.LogAsync(
+                action: AuditAction.ApproveOrder,
+                entity: "Order",
+                userId: _currentUser.UserId,
+                // Aquí forzamos el orden correcto usando nombres:
+                ipAddress: _currentUser.IpAddress,
+                additionalData: $"Aprobó pedido #{order.Id}. Factura generada."
+            );
+
+            return Result<string>.Success($"Pedido aprobado y facturado correctamente.");
         }
 
         // Helper de Mapeo

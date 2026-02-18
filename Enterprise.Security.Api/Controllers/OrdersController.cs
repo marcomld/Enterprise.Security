@@ -57,5 +57,17 @@ namespace Enterprise.Security.Api.Controllers
 
             return Ok(ApiResponse<OrderResponseDto>.Ok(result.Value!));
         }
+
+        [HttpPut("{id}/approve")]
+        [Authorize(Permissions.Orders.Approve)]
+        public async Task<ActionResult<ApiResponse<string>>> Approve(Guid id)
+        {
+            var result = await _service.ApproveOrderAsync(id);
+
+            if (!result.IsSuccess)
+                return BadRequest(ApiResponse<string>.Fail(result.Error!));
+
+            return Ok(ApiResponse<string>.Ok(result.Value!));
+        }
     }
 }

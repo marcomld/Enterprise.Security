@@ -11,7 +11,7 @@ namespace Enterprise.Security.Application.Interfaces.Services
     public interface IInvoiceService
     {
         // Caso 1: Facturación Automática (Desde Pedido)
-        Task<Result<Guid>> GenerateInvoiceFromOrderAsync(Guid orderId);
+        Task<Result<Guid>> GenerateInvoiceFromOrderAsync(Guid orderId, Guid approverId);
 
         // Caso 2: Facturación Directa (Vendedor)
         Task<Result<Guid>> CreateDirectInvoiceAsync(CreateDirectInvoiceDto dto);

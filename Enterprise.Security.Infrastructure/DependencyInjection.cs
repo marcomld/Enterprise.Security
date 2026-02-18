@@ -87,6 +87,10 @@ namespace Enterprise.Security.Infrastructure
             services.AddScoped<IOrderRepository, OrderRepository>();
             services.AddScoped<IOrderService, OrderService>();
 
+            // Invoicing
+            services.AddScoped<IInvoiceRepository, InvoiceRepository>();
+            services.AddScoped<IInvoiceService, InvoiceService>();
+
             // ... otros servicios
             services.AddScoped<ICurrentUserService, CurrentUserService>(); // <-- AGREGAR ESTO
 
