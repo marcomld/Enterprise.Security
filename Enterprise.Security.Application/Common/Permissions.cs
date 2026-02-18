@@ -34,6 +34,38 @@ namespace Enterprise.Security.Application.Common
             // public const string Export = "audits.export"; // Podrías agregar este a futuro
         }
 
+        public static class Categories
+        {
+            public const string View = "Permissions.Categories.View";
+            public const string Create = "Permissions.Categories.Create";
+            public const string Edit = "Permissions.Categories.Edit";
+            public const string Delete = "Permissions.Categories.Delete";
+        }
+
+        public static class Orders
+        {
+            public const string ViewAll = "Permissions.Orders.ViewAll"; // Supervisor
+            public const string ViewMy = "Permissions.Orders.ViewMy";   // Cliente
+            public const string Create = "Permissions.Orders.Create";   // Cliente
+            public const string Approve = "Permissions.Orders.Approve"; // Supervisor
+        }
+
+        public static class Products
+        {
+            public const string View = "Permissions.Products.View";
+            public const string Create = "Permissions.Products.Create";
+            public const string Edit = "Permissions.Products.Edit";
+            public const string Delete = "Permissions.Products.Delete";
+        }
+
+        public static class Invoices
+        {
+            public const string ViewAll = "Permissions.Invoices.ViewAll";       // Supervisor
+            public const string ViewMy = "Permissions.Invoices.ViewMy";         // Cliente
+            public const string CreateDirect = "Permissions.Invoices.CreateDirect"; // Vendedor (Venta Directa)
+                                                                                    // Nota: No hay "CreateFromOrder" porque eso lo hace el sistema automáticamente al aprobar.
+        }
+
         // Módulo de Permisos (Para que alguien pueda asignar permisos a roles)
         public static class SystemPermissions
         {

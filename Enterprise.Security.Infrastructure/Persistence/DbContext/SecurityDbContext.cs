@@ -19,10 +19,22 @@ namespace Enterprise.Security.Infrastructure.Persistence.DbContext
         }
 
         // --- TUS TABLAS (Ahora solo las esenciales) ---
+        // Tablas de Identity (con nombres personalizados) Modulo de Seguridad
         public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
-        // UserSessions eliminada por solicitud
         public DbSet<Permission> Permissions => Set<Permission>();
         public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
+
+        // Tablas Modulo de Inventario
+        public DbSet<Category> Categories => Set<Category>();
+        public DbSet<Product> Products => Set<Product>();
+
+        // Tablas Modulo de Pedidos
+        public DbSet<Order> Orders { get; set; }
+        public DbSet<OrderItem> OrderItems { get; set; }
+
+        // Tablas Modulo de Facturación
+        public DbSet<Invoice> Invoices { get; set; }
+        public DbSet<InvoiceItem> InvoiceItems { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

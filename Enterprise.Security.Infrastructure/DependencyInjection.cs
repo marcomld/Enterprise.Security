@@ -50,7 +50,7 @@ namespace Enterprise.Security.Infrastructure
                 options.Password.RequiredLength = 8;
                 options.User.RequireUniqueEmail = true;
 
-                // 🛑 HARDENING 3: Bloqueo por intentos fallidos
+                // HARDENING 3: Bloqueo por intentos fallidos
                 options.Lockout.AllowedForNewUsers = true;
                 options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15); // Bloqueado 15 min
                 options.Lockout.MaxFailedAccessAttempts = 5; // Al 5to intento incorrecto, chau.
@@ -74,6 +74,25 @@ namespace Enterprise.Security.Infrastructure
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IRoleRepository, RoleRepository>();
             services.AddScoped<IPermissionRepository, PermissionRepository>();
+
+            // Repositorios de Inventario
+            services.AddScoped<ICategoryRepository, CategoryRepository>();
+            services.AddScoped<IProductRepository, ProductRepository>();
+
+            // Servicios de Inventario
+            services.AddScoped<ICategoryService, CategoryService>();
+            services.AddScoped<IProductService, ProductService>();
+
+            // Repositorios y Servicios de Pedidos
+            services.AddScoped<IOrderRepository, OrderRepository>();
+            services.AddScoped<IOrderService, OrderService>();
+
+            // Invoicing
+            services.AddScoped<IInvoiceRepository, InvoiceRepository>();
+            services.AddScoped<IInvoiceService, InvoiceService>();
+
+            // ... otros servicios
+            services.AddScoped<ICurrentUserService, CurrentUserService>(); // <-- AGREGAR ESTO
 
             // --- AUTORIZACIÓN AVANZADA ---
             // Reemplazamos el proveedor de políticas por defecto con el nuestro dinámico
