@@ -42,6 +42,14 @@ namespace Enterprise.Security.Application.Common
             public const string Delete = "Permissions.Categories.Delete";
         }
 
+        public static class Orders
+        {
+            public const string ViewAll = "Permissions.Orders.ViewAll"; // Supervisor
+            public const string ViewMy = "Permissions.Orders.ViewMy";   // Cliente
+            public const string Create = "Permissions.Orders.Create";   // Cliente
+            public const string Approve = "Permissions.Orders.Approve"; // Supervisor
+        }
+
         public static class Products
         {
             public const string View = "Permissions.Products.View";
