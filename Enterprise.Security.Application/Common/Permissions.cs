@@ -58,6 +58,14 @@ namespace Enterprise.Security.Application.Common
             public const string Delete = "Permissions.Products.Delete";
         }
 
+        public static class Invoices
+        {
+            public const string ViewAll = "Permissions.Invoices.ViewAll";       // Supervisor
+            public const string ViewMy = "Permissions.Invoices.ViewMy";         // Cliente
+            public const string CreateDirect = "Permissions.Invoices.CreateDirect"; // Vendedor (Venta Directa)
+                                                                                    // Nota: No hay "CreateFromOrder" porque eso lo hace el sistema automáticamente al aprobar.
+        }
+
         // Módulo de Permisos (Para que alguien pueda asignar permisos a roles)
         public static class SystemPermissions
         {
