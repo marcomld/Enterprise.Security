@@ -16,5 +16,8 @@ namespace Enterprise.Security.Application.Interfaces.Services
         Task<Result<Guid>> CreateAsync(CreateProductDto dto);
         Task<Result<string>> UpdateAsync(UpdateProductDto dto);
         Task<Result<string>> UpdateStockAsync(AdjustStockDto dto); // Método clave para el futuro
+        Task<Result<string>> DeleteAsync(Guid id); // <--- AGREGAR
+        Task<Result<string>> ToggleStatusAsync(Guid id);
+        Task<Result<string>> AdjustStockAsync(AdjustStockDto dto);
     }
 }

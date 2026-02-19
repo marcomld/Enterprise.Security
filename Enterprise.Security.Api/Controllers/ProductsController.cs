@@ -64,4 +64,37 @@ public class ProductsController : ControllerBase
 
         return Ok(ApiResponse<string>.Ok(result.Value!));
     }
+
+    [HttpDelete("{id}")]
+    [Authorize(Permissions.Products.Delete)]
+    public async Task<ActionResult<ApiResponse<string>>> Delete(Guid id)
+    {
+        var result = await _service.DeleteAsync(id);
+
+        if (!result.IsSuccess)
+            return BadRequest(ApiResponse<string>.Fail(result.Error!));
+
+        return Ok(ApiResponse<string>.Ok(result.Value!));
+    }
+
+    [HttpPut("{id}/toggle-status")]
+    [Authorize(Permissions.Products.Edit)]
+    public async Task<ActionResult<ApiResponse<string>>> ToggleStatus(Guid id)
+    {
+        var result = await _service.ToggleStatusAsync(id);
+        if (!result.IsSuccess) return BadRequest(ApiResponse<string>.Fail(result.Error!));
+        return Ok(ApiResponse<string>.Ok(result.Value!));
+    }
+
+    [HttpPut("adjust-stock")]
+    [Authorize(Permissions.Products.Edit)]
+    public async Task<ActionResult<ApiResponse<string>>> AdjustStock(AdjustStockDto dto)
+    {
+        var result = await _service.AdjustStockAsync(dto);
+
+        if (!result.IsSuccess)
+            return BadRequest(ApiResponse<string>.Fail(result.Error!));
+
+        return Ok(ApiResponse<string>.Ok(result.Value!));
+    }
 }

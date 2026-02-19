@@ -27,7 +27,6 @@ namespace Enterprise.Security.Infrastructure.Repositories
         public async Task<List<Category>> GetAllAsync()
         {
             return await _context.Categories
-                .Where(c => c.IsActive) // Solo activas por defecto
                 .OrderBy(c => c.Name)
                 .ToListAsync();
         }

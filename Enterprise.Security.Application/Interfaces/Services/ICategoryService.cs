@@ -15,5 +15,6 @@ namespace Enterprise.Security.Application.Interfaces.Services
         Task<Result<Guid>> CreateAsync(CreateCategoryDto dto);
         Task<Result<string>> UpdateAsync(UpdateCategoryDto dto);
         Task<Result<string>> DeleteAsync(Guid id);
+        Task<Result<string>> ToggleStatusAsync(Guid id);
     }
 }

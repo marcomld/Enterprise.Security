@@ -37,7 +37,6 @@ namespace Enterprise.Security.Infrastructure.Repositories
         {
             return await _context.Products
                 .Include(p => p.Category)
-                .Where(p => p.IsActive)
                 .OrderBy(p => p.Name)
                 .ToListAsync();
         }

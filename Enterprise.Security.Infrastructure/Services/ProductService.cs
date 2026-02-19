@@ -145,6 +145,74 @@ public class ProductService : IProductService
         return Result<string>.Success($"Stock actualizado. Nuevo stock: {newStock}");
     }
 
+    public async Task<Result<string>> DeleteAsync(Guid id)
+    {
+        var product = await _productRepository.GetByIdAsync(id);
+        if (product == null) return Result<string>.Failure("Producto no encontrado.");
+
+        product.IsActive = false; // Soft Delete
+        await _productRepository.UpdateAsync(product);
+
+        // Auditoría
+        await _audit.LogAsync(
+            action: AuditAction.DeleteProduct,
+            entity: "Product",
+            userId: _currentUser.UserId,
+            ipAddress: _currentUser.IpAddress,
+            additionalData: $"Desactivó producto: {product.Name} ({product.SKU})"
+        );
+
+        return Result<string>.Success("Producto eliminado (lógicamente).");
+    }
+
+    public async Task<Result<string>> ToggleStatusAsync(Guid id)
+    {
+        var product = await _productRepository.GetByIdAsync(id);
+        if (product == null) return Result<string>.Failure("Producto no encontrado.");
+
+        product.IsActive = !product.IsActive; // Invertir estado
+        await _productRepository.UpdateAsync(product);
+
+        string estado = product.IsActive ? "activado" : "desactivado";
+
+        await _audit.LogAsync(
+            action: AuditAction.UpdateProduct, // O DeleteProduct si prefieres, pero Update es más exacto
+            entity: "Product",
+            userId: _currentUser.UserId,
+            ipAddress: _currentUser.IpAddress,
+            additionalData: $"Producto {estado}: {product.Name} ({product.SKU})"
+        );
+
+        return Result<string>.Success($"Producto {estado} correctamente.");
+    }
+
+    public async Task<Result<string>> AdjustStockAsync(AdjustStockDto dto)
+    {
+        var product = await _productRepository.GetByIdAsync(dto.ProductId);
+        if (product == null) return Result<string>.Failure("Producto no encontrado.");
+
+        int stockAnterior = product.StockQuantity;
+        int nuevoStock = stockAnterior + dto.QuantityAdjustment;
+
+        // Validación opcional: No permitir stock negativo
+        if (nuevoStock < 0)
+            return Result<string>.Failure($"El ajuste resultaría en stock negativo ({nuevoStock}). Stock actual: {stockAnterior}");
+
+        product.StockQuantity = nuevoStock;
+        await _productRepository.UpdateAsync(product);
+
+        // Auditoría
+        await _audit.LogAsync(
+            action: AuditAction.AdjustStock,
+            entity: "Product",
+            userId: _currentUser.UserId,
+            ipAddress: _currentUser.IpAddress,
+            additionalData: $"Ajuste: {dto.QuantityAdjustment} (Motivo: {dto.Reason}). Stock: {stockAnterior} -> {nuevoStock}"
+        );
+
+        return Result<string>.Success($"Stock actualizado. Nuevo total: {nuevoStock}");
+    }
+
     // Helper para mapeo manual
     private static ProductDto MapToDto(Product p) => new(
         p.Id,

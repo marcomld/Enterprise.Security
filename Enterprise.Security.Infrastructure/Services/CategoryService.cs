@@ -104,4 +104,25 @@ public class CategoryService : ICategoryService
 
         return Result<string>.Success("Categoría eliminada (lógicamente).");
     }
+
+    public async Task<Result<string>> ToggleStatusAsync(Guid id)
+    {
+        var category = await _repository.GetByIdAsync(id);
+        if (category == null) return Result<string>.Failure("Categoría no encontrada.");
+
+        category.IsActive = !category.IsActive; // Invertir estado (True -> False, False -> True)
+        await _repository.UpdateAsync(category);
+
+        string estado = category.IsActive ? "activada" : "desactivada";
+
+        await _audit.LogAsync(
+            action: AuditAction.UpdateCategory,
+            entity: "Category",
+            userId: _currentUser.UserId,
+            ipAddress: _currentUser.IpAddress,
+            additionalData: $"Categoría {estado}: {category.Name}"
+        );
+
+        return Result<string>.Success($"Categoría {estado} correctamente.");
+    }
 }
