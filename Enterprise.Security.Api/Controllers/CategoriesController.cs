@@ -74,4 +74,13 @@ public class CategoriesController : ControllerBase
 
         return Ok(ApiResponse<string>.Ok(result.Value!));
     }
+
+    [HttpPut("{id}/toggle-status")]
+    [Authorize(Permissions.Categories.Edit)] // Usamos permiso de Edición, o Delete si prefieres restringirlo más
+    public async Task<ActionResult<ApiResponse<string>>> ToggleStatus(Guid id)
+    {
+        var result = await _service.ToggleStatusAsync(id);
+        if (!result.IsSuccess) return BadRequest(ApiResponse<string>.Fail(result.Error!));
+        return Ok(ApiResponse<string>.Ok(result.Value!));
+    }
 }

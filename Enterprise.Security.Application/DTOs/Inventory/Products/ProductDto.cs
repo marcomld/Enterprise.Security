@@ -7,19 +7,19 @@ using System.Threading.Tasks;
 namespace Enterprise.Security.Application.DTOs.Inventory.Products
 {
     public record ProductDto(
-    Guid Id,
-    Guid CategoryId,
-    string CategoryName, // Flattening: muy útil para grids en Blazor
-    string SKU,
-    string Name,
-    string Description,
-    decimal UnitPrice,
-    decimal TaxRate,
-    int StockQuantity,
-    int MinStockLevel,
-    string? ImageUrl,
-    bool IsActive
-);
+        Guid Id,
+        Guid CategoryId,
+        string CategoryName, // Flattening: muy útil para grids en Blazor
+        string SKU,
+        string Name,
+        string Description,
+        decimal UnitPrice,
+        decimal TaxRate,
+        int StockQuantity,
+        int MinStockLevel,
+        string? ImageUrl,
+        bool IsActive
+    );
 
     public record CreateProductDto(
         Guid CategoryId,
@@ -48,6 +48,7 @@ namespace Enterprise.Security.Application.DTOs.Inventory.Products
     // DTO especial para actualizar stock (usado por Ventas/Pedidos)
     public record AdjustStockDto(
         Guid ProductId,
-        int QuantityAdjustment // Puede ser positivo (entrada) o negativo (salida)
+        int QuantityAdjustment, // Puede ser positivo (entrada) o negativo (salida)
+        string ? Reason // Opcional, pero útil para auditoría (ej: "Venta de pedido #1234", "Devolución", "Ajuste de inventario")
     );
 }

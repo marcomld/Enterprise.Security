@@ -4,6 +4,13 @@ using Enterprise.Security.Application;     // Para AddApplication
 using Enterprise.Security.Infrastructure;
 using Enterprise.Security.Infrastructure.Persistence.Seed;
 using Microsoft.AspNetCore.RateLimiting;  // Para AddInfrastructure
+using System.Globalization;
+
+var culture = new CultureInfo("es-EC");
+
+CultureInfo.DefaultThreadCurrentCulture = culture;
+CultureInfo.DefaultThreadCurrentUICulture = culture;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
